@@ -8,7 +8,7 @@ export function AppShell({ children, navigation, meetingMode }) {
   return (
     <div className={`app ${meetingMode ? 'meeting-mode' : ''}`}>
       <aside className="rail" aria-label="Navigation principale">
-        <button className="o7mark" onClick={() => navigate('/')} aria-label="Accueil O7 Meet">O7</button>
+        <button className="o7mark" onClick={() => navigate('/')} aria-label="Accueil O7 Meet"><span>O</span><b>7</b></button>
         <button className={`railbtn ${route.name === 'home' ? 'active' : ''}`} onClick={() => navigate('/')} aria-label="Accueil"><Icon name="grid" /></button>
         <button className={`railbtn ${['meeting', 'create', 'join'].includes(route.name) ? 'active' : ''}`} onClick={() => navigate('/new')} aria-label={t('newMeeting')}><Icon name="video" /></button>
         <button className={`railbtn ${route.name === 'meetings' ? 'active' : ''}`} onClick={() => navigate('/meetings')} aria-label={t('meetings')}><Icon name="calendar" /></button>
