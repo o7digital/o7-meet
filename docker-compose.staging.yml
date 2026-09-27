@@ -14,6 +14,16 @@ services:
       - "3478:3478/udp"
       - "49160-49200:49160-49200/udp"
     networks: [meet]
+  livekit:
+    image: livekit/livekit-server:v1.9.2
+    restart: unless-stopped
+    command: ["--config", "/etc/livekit.yaml"]
+    volumes: ["./livekit.yaml:/etc/livekit.yaml:ro"]
+    ports:
+      - "7880:7880/tcp"
+      - "7881:7881/tcp"
+      - "50000-50100:50000-50100/udp"
+    networks: [meet]
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped

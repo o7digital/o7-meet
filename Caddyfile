@@ -1,3 +1,9 @@
 {$MEET_DOMAIN} {
+  handle /rtc* {
+    reverse_proxy livekit:7880
+  }
+  handle /twirp* {
+    reverse_proxy livekit:7880
+  }
   reverse_proxy meet:8080
 }

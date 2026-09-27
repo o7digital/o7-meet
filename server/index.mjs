@@ -2,14 +2,17 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import { join, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:http';
-import { randomUUID } from 'node:crypto';
-import { WebSocketServer } from 'ws';
+import { AccessToken } from 'livekit-server-sdk';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'dist');
-const rooms = new Map();
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.json': 'application/json' };
-const server = createServer((req, res) => { let path = new URL(req.url, 'http://localhost').pathname; if (path === '/healthz') { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ status: 'ok', service: 'o7-meet' })); return; } if (path === '/config.json') { res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' }); res.end(JSON.stringify({ turnUrls: process.env.TURN_URLS?.split(',').filter(Boolean) || [], turnUsername: process.env.TURN_USERNAME || '', turnCredential: process.env.TURN_PASSWORD || '' })); return; } let file = join(root, path === '/' ? 'index.html' : path); if (!existsSync(file) || !statSync(file).isFile()) file = join(root, 'index.html'); res.writeHead(200, { 'content-type': mime[extname(file)] || 'application/octet-stream', 'cache-control': 'no-store' }); createReadStream(file).pipe(res); });
-const wss = new WebSocketServer({ noServer: true });
-server.on('upgrade', (req, socket, head) => { if (new URL(req.url, 'http://localhost').pathname !== '/ws') return socket.destroy(); wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws)); });
-wss.on('connection', (ws) => { let room; let peerId; ws.on('message', (raw) => { const message = JSON.parse(raw); if (message.type === 'join') { room = rooms.get(message.roomId) || new Map(); peerId = randomUUID(); const peers = room.size; room.set(peerId, ws); rooms.set(message.roomId, room); ws.send(JSON.stringify({ type: 'joined', peerId, peers })); for (const [id, peer] of room) if (id !== peerId) peer.send(JSON.stringify({ type: 'peer-joined', peerId })); return; } if (!room) return; for (const [id, peer] of room) if (id !== peerId && peer.readyState === 1) peer.send(JSON.stringify({ ...message, from: peerId })); }); const leave = () => { if (!room || !peerId) return; room.delete(peerId); for (const peer of room.values()) if (peer.readyState === 1) peer.send(JSON.stringify({ type: 'peer-left', peerId })); if (!room.size) rooms.delete([...rooms.entries()].find(([, value]) => value === room)?.[0]); room = null; }; ws.on('close', leave); });
-server.listen(process.env.PORT || 8080, '127.0.0.1', () => console.log('O7 Meet listening on 127.0.0.1:' + (process.env.PORT || 8080)));
+const config = () => ({ livekitUrl: process.env.LIVEKIT_URL || '', turnUrls: process.env.TURN_URLS?.split(',').filter(Boolean) || [], turnUsername: process.env.TURN_USERNAME || '', turnCredential: process.env.TURN_PASSWORD || '' });
+
+const server = createServer(async (req, res) => {
+  const url = new URL(req.url, 'http://localhost');
+  if (url.pathname === '/healthz') { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ status: 'ok', service: 'o7-meet', media: Boolean(process.env.LIVEKIT_URL) })); return; }
+  if (url.pathname === '/config.json') { res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' }); res.end(JSON.stringify(config())); return; }
+  if (url.pathname === '/token') { const room = url.searchParams.get('room'); const identity = (url.searchParams.get('identity') || '').slice(0, 100); if (!room || !identity || !process.env.LIVEKIT_API_KEY || !process.env.LIVEKIT_API_SECRET) { res.writeHead(400, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'room, identity and LiveKit server configuration are required' })); return; } const token = new AccessToken(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET, { identity, name: identity }); token.addGrant({ roomJoin: true, room, canPublish: true, canSubscribe: true, roomCreate: true }); res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' }); res.end(JSON.stringify({ token: await token.toJwt(), url: process.env.LIVEKIT_URL || '' })); return; }
+  let file = join(root, url.pathname === '/' ? 'index.html' : url.pathname); if (!existsSync(file) || !statSync(file).isFile()) file = join(root, 'index.html'); res.writeHead(200, { 'content-type': mime[extname(file)] || 'application/octet-stream', 'cache-control': 'no-store' }); createReadStream(file).pipe(res);
+});
+server.listen(process.env.PORT || 8080, '0.0.0.0', () => console.log('O7 Meet listening on :' + (process.env.PORT || 8080)));

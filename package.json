@@ -11,10 +11,11 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
+    "livekit-client": "^2.22.3",
+    "livekit-server-sdk": "^2.19.1",
     "react": "latest",
     "react-dom": "latest",
+    "vite": "latest",
     "ws": "^8.18.0"
-  },
-  "devDependencies": {}
+  }
 }
