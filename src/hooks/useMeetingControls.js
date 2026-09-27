@@ -7,8 +7,10 @@ export function useMeetingControls(roomId) {
   const [state, setState] = useState(initialState);
   useEffect(() => {
     let active = true;
-    getVideoProvider().connect(roomId).then(() => active && setState((current) => ({ ...current, status: 'connected' }))).catch(() => active && setState((current) => ({ ...current, status: 'error', error: 'No se pudo conectar a la sala.' })));
-    return () => { active = false; getVideoProvider().disconnect(); };
+    const provider = getVideoProvider();
+    const unsubscribe = provider.subscribe?.((next) => active && setState((current) => ({ ...current, ...next, status: next.connected ? 'connected' : current.status })));
+    provider.connect(roomId).then(() => active && setState((current) => ({ ...current, status: 'connected' }))).catch((error) => active && setState((current) => ({ ...current, status: 'error', error: error.message || 'No se pudo conectar a la sala.' })));
+    return () => { active = false; unsubscribe?.(); provider.disconnect(); };
   }, [roomId]);
 
   const toggle = useCallback(async (key) => {

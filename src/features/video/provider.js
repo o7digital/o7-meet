@@ -1,8 +1,8 @@
-import { MockVideoProvider } from './MockVideoProvider';
+import { LiveWebRTCProvider } from './LiveWebRTCProvider';
 
 let provider;
 
 export function getVideoProvider() {
-  if (!provider) provider = new MockVideoProvider();
+  if (!provider) provider = new LiveWebRTCProvider();
   return provider;
 }

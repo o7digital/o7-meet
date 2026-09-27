@@ -1,0 +1,3 @@
+{$MEET_DOMAIN} {
+  reverse_proxy meet:8080
+}

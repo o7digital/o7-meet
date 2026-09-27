@@ -38,7 +38,7 @@ export default function MeetingRoomPage({ navigation, params }) {
     <header className="meeting-header"><button className="meeting-brand" onClick={() => setLeaveOpen(true)}><span><i>O</i><b>7</b></span> Meet</button><div><small>O7 MEET · <span className="live-dot" /> LIVE</small><h1>{activeMeeting.title}</h1></div><div className="meeting-meta"><span>{controls.status === 'connecting' ? 'Conectando…' : time}</span><span>·</span><span>{participants.filter((person) => person.connected).length} participantes</span><button onClick={copyLink} title="Copiar enlace"><Icon name="link" /></button><button onClick={toggleFullscreen} title="Pantalla completa"><Icon name="fullscreen" /></button><button onClick={() => setSettingsOpen(true)} title="Ajustes"><Icon name="settings" /></button></div></header>
     {controls.error && <div className="connection-alert">{controls.error} <button onClick={() => window.location.reload()}>Reintentar</button></div>}
     <div className={`meeting-grid ${sideOpen ? 'with-panel' : ''}`}>
-      <VideoArea layout={layout} screenSharing={controls.screen} camera={controls.camera} />
+      <VideoArea layout={layout} screenSharing={controls.screen} camera={controls.camera} localStream={controls.localStream} remoteStream={controls.remoteStream} />
       {olivia && <OliviaPanel onClose={() => setOlivia(false)} />}
       {panel === 'participants' && <ParticipantsPanel onClose={() => setPanel('')} onInvite={(email) => toast.show(`Invitación simulada para ${email}`)} />}
       {panel === 'chat' && <ChatPanel onClose={() => setPanel('')} />}
@@ -50,10 +50,16 @@ export default function MeetingRoomPage({ navigation, params }) {
   </section>;
 }
 
-function VideoArea({ layout, screenSharing, camera }) {
+function VideoArea({ layout, screenSharing, camera, localStream, remoteStream }) {
+  if (localStream || remoteStream) return <div className={`video-area layout-${layout} live-video-area`}><LiveVideo stream={remoteStream} label="Participante" /><LiveVideo stream={localStream} label="Tú" muted camera={camera} /></div>;
   const visible = participants.filter((person) => person.connected);
   if (screenSharing) return <div className="video-area screen-layout"><div className="shared-screen"><span className="mock-badge">SCREEN SHARE · DEMO</span><div className="screen-document"><div className="screen-doc-head" /><div className="screen-doc-title" /><div className="screen-doc-grid"><i /><i /><i /></div></div><span>Olivier está compartiendo su pantalla</span></div><div className="floating-participants">{visible.slice(0, 3).map((person, index) => <PersonTile key={person.id} person={person} index={index} camera={camera} />)}</div></div>;
   return <div className={`video-area layout-${layout}`}>{visible.map((person, index) => <PersonTile key={person.id} person={person} index={index} camera={person.isSelf ? camera : true} speaker={index === 0} />)}</div>;
+}
+
+function LiveVideo({ stream, label, muted = false, camera = true }) {
+  const ref = (node) => { if (node && stream && node.srcObject !== stream) node.srcObject = stream; };
+  return <div className="person-tile live-tile"><video ref={ref} autoPlay playsInline muted={muted} className={!camera ? 'video-hidden' : ''} /><div className="nameplate">{label}</div>{!camera && <div className="camera-off-label">Cámara apagada</div>}</div>;
 }
 
 function PersonTile({ person, index, camera, speaker }) {
