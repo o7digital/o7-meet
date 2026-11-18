@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 function parsePath(pathname) {
   const path = pathname.replace(/\/+$/, '') || '/';
   if (path === '/') return { name: 'home', params: {} };
+  if (path === '/import') return { name: 'import', params: {} };
   if (path === '/new') return { name: 'create', params: {} };
   if (path === '/join') return { name: 'join', params: {} };
   if (path === '/meetings') return { name: 'meetings', params: {} };

@@ -3,6 +3,9 @@ services:
     build: .
     restart: unless-stopped
     env_file: .env.staging
+    environment:
+      MEET_DATA_DIR: /data
+    volumes: ["meet-data:/data"]
     networks: [meet]
   coturn:
     image: coturn/coturn:4.6
@@ -34,5 +37,6 @@ services:
 networks:
   meet:
 volumes:
+  meet-data:
   caddy-data:
   caddy-config:

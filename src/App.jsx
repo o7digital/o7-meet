@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { AppShell } from './components/AppShell';
 import { LoadingState } from './components/Feedback';
 import { useNavigation } from './hooks/useNavigation';
+import { SessionProvider } from './features/documents/Session';
 
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const CreateMeetingPage = lazy(() => import('./pages/CreateMeetingPage'));
@@ -12,6 +13,7 @@ const MeetingsPage = lazy(() => import('./pages/MeetingsPage'));
 
 const routes = {
   home: DashboardPage,
+  import: DashboardPage,
   create: CreateMeetingPage,
   join: JoinMeetingPage,
   meeting: MeetingRoomPage,
@@ -24,10 +26,10 @@ export function App() {
   const Page = routes[navigation.route.name] || DashboardPage;
 
   return (
-    <AppShell navigation={navigation} meetingMode={navigation.route.name === 'meeting'}>
+    <SessionProvider><AppShell navigation={navigation} meetingMode={navigation.route.name === 'meeting'}>
       <Suspense fallback={<LoadingState label="Cargando O7 Meet…" />}>
         <Page navigation={navigation} params={navigation.route.params} />
       </Suspense>
-    </AppShell>
+    </AppShell></SessionProvider>
   );
 }

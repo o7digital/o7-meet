@@ -1,26 +1,12 @@
-import { tasks, transcript } from '../features/meetings/data';
-
-const mockSummary = {
-  summary: 'The team aligned on prioritizing the e-commerce workflow before the seasonal peak, with backend catalog synchronization and R365 integration identified as the critical delivery path.',
-  topics: ['e-commerce', 'R365', 'catalog', 'delivery'],
-  decisions: ['Prioritize online ordering.', 'Use the backend catalog as the product source of truth.', 'Prepare R365 integration scope before implementation.'],
-  commitments: ['Olivier will prepare the technical scope.', 'Artimex will validate the catalog structure before Friday.'],
-  nextSteps: ['Share the technical scope', 'Validate catalog fields', 'Schedule integration review'],
-  tasks,
-  transcript,
-};
-
-/** Mock-only Olivia boundary. No real AI request is represented as completed. */
+let csrf = '';
+export function setCsrf(value) { csrf = value || ''; }
+export async function api(path, { method = 'GET', body, raw = false } = {}) {
+  const response = await fetch(`/api/olivia${path}`, { method, credentials: 'same-origin', headers: { ...(method !== 'GET' ? { 'x-meet-csrf': csrf } : {}), ...(!raw && body ? { 'content-type': 'application/json' } : {}) }, ...(body ? { body: raw ? body : JSON.stringify(body) } : {}) });
+  const result = await response.json();
+  if (!response.ok) { const error = new Error(result.error || `Erreur HTTP ${response.status}`); error.status = response.status; error.code = result.code; if (response.status === 401 && result.code === 'AUTH_REQUIRED') window.dispatchEvent(new Event('meet-session-expired')); throw error; }
+  return result;
+}
 export const oliviaService = {
-  async getMeetingSummary() { return { ...mockSummary, simulated: true }; },
-  async ask(question) {
-    const normalized = question.toLowerCase();
-    let answer = 'This is a mocked Olivia answer based on the demo transcript.';
-    if (normalized.includes('decid')) answer = mockSummary.decisions.join(' ');
-    if (normalized.includes('action') || normalized.includes('tarea')) answer = `There are ${tasks.length} action items. Olivier owns the technical integration scope.`;
-    if (normalized.includes('résum') || normalized.includes('resum')) answer = mockSummary.summary;
-    return { answer, simulated: true };
-  },
+  getMeetingSummary: id => api(`/meetings/${encodeURIComponent(id)}`),
+  process: id => api(`/meetings/${id}/process`, { method: 'POST' }),
 };
-
-export { mockSummary };
