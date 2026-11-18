@@ -89,3 +89,15 @@ docker compose --env-file .env.staging -p o7-meet-staging -f docker-compose.stag
 ```
 
 Ne pas recréer Caddy, LiveKit ou Coturn ; vérifier `/healthz` et le domaine existant. L’ancienne version réaffiche l’ancienne interface de démonstration ; les données privées restent dans le volume, absentes de cette ancienne interface.
+
+## Résultats de validation en production
+
+Le 18 novembre 2026, le commit fonctionnel `b37cc14e04e284e0811f920d2f78adc251d8b2ed` a été poussé sur `staging/o7-meet-webrtc` et déployé par la CLI Docker Compose. `/healthz` renvoie ce SHA et HTTPS répond 200 sur `/import`. Caddy, LiveKit et Coturn ont conservé leurs conteneurs actifs et leurs configurations.
+
+Trois parcours ont été exécutés sur cette URL avec le fournisseur réel : WAV synthétique de 8,84 secondes, VTT au format Teams avec Olivier/Laetitia et horodatage 00:00:01.125, et MP4 synthétique dont la piste audio est extraite dans le conteneur. Ils ont terminé les quatre étapes. Trente exports (cinq variantes × deux formats × trois sources) ont été contrôlés ; les DOCX ont été ouverts comme archives et leur XML inspecté. Les accès anonymes aux exports sont refusés et les réimports identiques sont dédupliqués. La traduction et les sujets du compte rendu ont été vérifiés en anglais ; les citations, le responsable Olivier et l’échéance relative vendredi restent fidèles à la source.
+
+Firefox a validé l’écran de connexion, le parcours d’import depuis le formulaire, la fin du traitement, le téléchargement Word et les affichages à 390/1440 px, sans erreur JavaScript. Le cas « aucune décision ni action » retourne des listes vides. Ces contrôles authentifiés utilisent une session technique temporaire du propriétaire créée côté serveur et révoquée après test ; ils ne constituent pas un test du mot de passe personnel d’Olivier. La connexion TLS depuis le conteneur Meet au serveur Mailcow a été vérifiée avec un certificat autorisé. Les six tests automatisés couvrent en plus un second utilisateur authentifié, le partage, sa révocation et les écritures interdites à un lecteur. Tous les documents synthétiques et sessions de validation ont été supprimés. Aucun message réel n’a été envoyé.
+
+Sauvegarde initiale disponible : `/srv/o7-meet-backups/b37cc14e04e2/`. Retour à l’image initiale : exécuter son `rollback.sh`. Le volume des documents privés reste intact.
+
+Les captures Firefox et les documents synthétiques de contrôle sont conservés localement dans `/Users/oliviersteineur/meet-delivery-20261118/production/`, sans secret de connexion. Les clés et cookies de test ne sont ni committés ni inclus dans le contexte Docker. `npm audit --omit=dev` et l’installation de l’image donnent zéro vulnérabilité de dépendance en production ; l’audit des outils de développement signale encore la chaîne transitive picomatch/Vite, exclue de l’image serveur.

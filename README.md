@@ -1,39 +1,40 @@
-# O7 Meet
+# Olivia One Meet
 
-Frontend React/Vite autonome pour O7 Meet. Cette première passe transforme le mockup validé en une base modulaire, responsive et navigable, prête à accueillir un fournisseur WebRTC, Olivia, Pulse CRM et le SSO Olivia One.
+Meet existant sur VPS2 : https://meet-staging.o7digitalgroup.com/import
 
-## Démarrer
+Import privé de transcriptions VTT/SRT/TXT, audio et vidéos avec piste audio ; transcription réelle avec le fournisseur Olivia existant, traduction, compte rendu avec citations et résumé court. Exports Word et texte séparés ou complets. Le connecteur Microsoft Graph après réunion est implémenté ; son utilisation attend la configuration Entra et le consentement administrateur.
 
-```bash
-npm install
-npm run dev
+**[Utilisation, configuration, limitations, tests et retour arrière](docs/OLIVIA_MEET.md)**
+
+## Développement
+
+```sh
+npm ci
+npm run build
+npm test
 ```
 
-Puis ouvrir l’URL Vite affichée. La langue par défaut est l’espagnol ; le sélecteur ES/EN/FR conserve le choix localement.
+Copier `.env.example` dans un fichier local, renseigner les identités vérifiées et les fournisseurs côté serveur, puis lancer :
 
-## Scripts
+```sh
+node --env-file=.env.local server/index.mjs
+```
 
-- `npm run dev` : serveur local avec hot reload
-- `npm run build` : build de production dans `dist/`
-- `npm run preview` : prévisualisation locale du build
+La configuration `.env.example` utilise l’origine de production. Pour un serveur local, adapter `APP_ORIGIN` à son URL réelle et `MEET_DATA_DIR` à un chemin accessible. Le serveur sert le build Vite et les API privées. `npm run dev` seul sert l’interface sans ces API ; ne pas le présenter comme un traitement opérationnel.
 
-## Parcours disponibles
+## Routes
 
-- `/` — dashboard, recherche, réunions à venir et récentes
-- `/new` — création et programmation de réunion
-- `/join` — accès par code/lien, y compris en mode invité
-- `/m/:id` — salle de réunion interactive avec dispositions, contrôles et panneaux
-- `/summary/:id` — compte-rendu Olivia, transcription, tâches et actions
-- `/meetings` — historique filtrable
+- `/`, `/import`, `/meetings` : connexion, import et documents autorisés.
+- `/summary/:id` : document privé, état des traitements, exports et destinataires.
+- `/new` : création d’un lien de salle LiveKit sur le domaine courant ; aucun événement calendrier ni enregistrement automatique n’est annoncé.
+- `/join`, `/m/:id` : visioconférence existante ; les documents Olivia sont produits après import.
+- `/api/olivia/*` : sessions, import, traitement, exports, partage et connexion Microsoft.
+- `/healthz` : état et SHA de la version déployée.
 
-Toutes les interactions vidéo, Olivia, Calendar et Pulse CRM sont explicitement simulées. L’interface ne prétend pas communiquer avec un backend tant que celui-ci n’est pas configuré.
+## Hébergement
 
-## Documentation
+Le domaine existant est servi par Docker Compose dans `/srv/o7-meet-staging` sur VPS2, avec Caddy, LiveKit et Coturn. Les sources et résultats privés résident dans le volume `meet-data`. Le déploiement doit utiliser le serveur Node, pas seulement les fichiers statiques : le fichier Vercel historique ne correspond pas à cet hébergement.
 
-- [Architecture](docs/ARCHITECTURE.md)
-- [Contrats d’intégration](docs/INTEGRATIONS.md)
-- [Prochaines étapes](docs/NEXT_STEPS.md)
+Préserver le Caddyfile distant, qui contient également une route CMS. Sauvegarder l’image précédente et le code avant `docker compose ... build meet` puis `up -d --no-deps --no-build meet`. La procédure détaillée et les contrôles figurent dans la documentation de livraison.
 
-## Déploiement
-
-Le projet produit un site statique Vite. L’hébergeur devra rediriger les routes applicatives (`/m/*`, `/summary/*`, etc.) vers `index.html`. Aucun environnement de production n’est lié à ce dépôt pour le moment.
+Les anciens documents [architecture](docs/ARCHITECTURE.md), [intégrations](docs/INTEGRATIONS.md) et [étapes initiales](docs/NEXT_STEPS.md) décrivent la base de maquette ; la documentation de livraison ci-dessus décrit le fonctionnement actuel.
